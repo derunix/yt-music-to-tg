@@ -8,7 +8,9 @@ services:
       - .env
     volumes:
       - ./downloads:/tmp/ytmusicbot
+      - redis-sock:/var/run/redis
     restart: unless-stopped
+    network_mode: "service:vpn"
     depends_on:
       - redis
 
@@ -16,5 +18,25 @@ services:
     image: redis
     container_name: yt-mp3-redis
     restart: unless-stopped
+    volumes:
+      - redis-sock:/var/run/redis
+    command: >
+      sh -c "mkdir -p /var/run/redis && chown redis:redis /var/run/redis &&
+             redis-server --unixsocket /var/run/redis/redis.sock --unixsocketperm 770"
+  vpn:
+    image: qmcgaw/gluetun
+    container_name: pia-vpn
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
     ports:
-      - "6379:6379"
+      - 8888:8888 # optional proxy/test port
+    volumes:
+      - ./gluetun:/gluetun
+    env_file:
+      - .env
+    restart: unless-stopped
+
+volumes:
+  redis-sock:
